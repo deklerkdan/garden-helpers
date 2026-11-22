@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Garden Helpers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1d6b3a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Garden">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<style>
+:root {
+  --ground: #f5f1e6; --paper: #ffffff; --ink: #1a2a1f; --muted: #46574c; --line: #c9d3c3;
+  --accent: #1d6b3a; --accent-ink: #ffffff; --accent-soft: #e0f0e4;
+  --sun: #8a4b00; --sun-soft: #fbeccf; --bad: #a3231a; --bad-soft: #fde5e2;
+  --s: 1; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground: #0f1a13; --paper: #172319; --ink: #f1f6f2; --muted: #b3c4b8; --line: #35493b; --accent: #86d9a2; --accent-ink: #0b1f12; --accent-soft: #1e3a27; --sun: #f0b35f; --sun-soft: #3a2a12; --bad: #ff9d94; --bad-soft: #3d1b18; color-scheme: dark; } }
+:root[data-theme="dark"] { --ground: #0f1a13; --paper: #172319; --ink: #f1f6f2; --muted: #b3c4b8; --line: #35493b; --accent: #86d9a2; --accent-ink: #0b1f12; --accent-soft: #1e3a27; --sun: #f0b35f; --sun-soft: #3a2a12; --bad: #ff9d94; --bad-soft: #3d1b18; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: "Atkinson Hyperlegible", "Segoe UI", Verdana, system-ui, sans-serif; font-size: calc(20px * var(--s)); line-height: 1.45; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 4px solid var(--sun); outline-offset: 2px; }
+.wrap { max-width: 640px; margin: 0 auto; padding: 12px 14px 80px; }
+h1 { font-size: calc(1.55em); line-height: 1.15; margin: 8px 0 14px; }
+h2 { font-size: 1.25em; margin: 22px 0 8px; }
+p { margin: 0 0 12px; }
+.muted { color: var(--muted); }
+.small { font-size: .82em; }
+.eyebrow { color: var(--muted); font-weight: 700; letter-spacing: .02em; }
+
+/* accessibility bar: always on top */
+.tools { position: sticky; top: 0; z-index: 5; background: var(--ground); padding: 8px 0 10px; border-bottom: 2px solid var(--line); display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.tools button { border: 2px solid var(--line); background: var(--paper); border-radius: 12px; min-height: 56px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; line-height: 1.1; }
+.tools .ic { font-size: 1.35em; font-weight: 700; }
+.tools .wd { font-size: .62em; font-weight: 700; }
+html[data-labels="icons"] .tools .wd { display: none; }
+html[data-labels="icons"] .tools .ic { font-size: 1.6em; }
+.tools button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+.back { margin: 14px 0 0; border: 0; background: none; color: var(--accent); font-weight: 700; font-size: 1em; padding: 10px 0; text-decoration: underline; text-underline-offset: 4px; }
+.top { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.top .eyebrow { flex: 1; }
+
+/* the big buttons */
+.btn { display: flex; align-items: center; justify-content: center; gap: .5em; width: 100%; min-height: 64px; padding: 12px 18px; border-radius: 16px; border: 3px solid var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 700; text-align: center; text-decoration: none; }
+.btn.alt { background: var(--paper); color: var(--accent); }
+.btn.warn { background: var(--paper); color: var(--bad); border-color: var(--bad); }
+.btn.small { min-height: 48px; width: auto; display: inline-flex; padding: 6px 16px; font-size: .9em; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row > .btn { flex: 1 1 140px; }
+.stack { display: grid; gap: 12px; }
+
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; min-height: 168px; padding: 14px 8px; border-radius: 20px; border: 3px solid var(--accent); background: var(--paper); color: var(--ink); }
+.tile .big { font-size: 2.6em; line-height: 1; }
+.tile .name { font-weight: 800; font-size: 1.05em; }
+.tile .sub { font-size: .8em; color: var(--muted); font-weight: 600; }
+.tile.t1 { background: var(--accent-soft); } .tile.t3 { background: var(--sun-soft); border-color: var(--sun); }
+html[data-big="1"] .tiles { grid-template-columns: 1fr; } html[data-big="1"] .tile { min-height: 120px; flex-direction: row; gap: 14px; justify-content: flex-start; padding: 14px 18px; text-align: left; }
+.tile .txt { display: grid; gap: 2px; }
+
+.card { background: var(--paper); border: 2px solid var(--line); border-radius: 16px; padding: 14px 16px; margin: 0 0 12px; }
+.card h3 { margin: 0 0 4px; font-size: 1.05em; }
+.banner { background: var(--sun-soft); border: 3px solid var(--sun); border-radius: 16px; padding: 12px 16px; margin: 12px 0; font-weight: 700; }
+.error { background: var(--bad-soft); border: 3px solid var(--bad); border-radius: 16px; padding: 12px 16px; margin: 12px 0; font-weight: 700; display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
+.error button { border: 2px solid var(--bad); background: none; border-radius: 10px; min-height: 44px; padding: 0 14px; font-weight: 700; }
+.good { background: var(--accent-soft); border: 3px solid var(--accent); border-radius: 16px; padding: 12px 16px; margin: 12px 0; font-weight: 700; }
+
+label.f { display: block; font-weight: 700; margin: 14px 0 6px; }
+input[type=text], input[type=password], input[type=email], input[type=tel], input[type=date], input[type=time], textarea, select { width: 100%; min-height: 60px; padding: 10px 14px; border: 3px solid var(--line); border-radius: 14px; background: var(--paper); }
+textarea { min-height: 120px; resize: vertical; }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+
+.pick { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; text-align: left; padding: 10px 16px; border-radius: 16px; border: 3px solid var(--line); background: var(--paper); font-weight: 700; margin: 0 0 10px; }
+.pick .box { flex: none; width: 36px; height: 36px; border-radius: 10px; border: 3px solid var(--muted); display: grid; place-items: center; font-size: 1.1em; }
+.pick[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.pick[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pick .em { font-size: 1.4em; } .pick small { display: block; font-weight: 500; color: var(--muted); font-size: .75em; }
+.yn { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+.yn .pick { margin: 0; justify-content: center; text-align: center; }
+
+.stepper { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px 0; }
+.stepper button { width: 84px; height: 84px; border-radius: 50%; border: 4px solid var(--accent); background: var(--paper); color: var(--accent); font-size: 2.2em; font-weight: 800; line-height: 1; }
+.stepper .val { min-width: 130px; text-align: center; font-size: 2.2em; font-weight: 800; line-height: 1.05; }
+.stepper .val small { display: block; font-size: .4em; font-weight: 700; color: var(--muted); }
+
+.progress { height: 14px; background: var(--line); border-radius: 8px; overflow: hidden; margin: 8px 0 6px; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+
+.task { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 2px solid var(--line); background: var(--paper); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; min-height: 64px; }
+.task .tick { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--muted); display: grid; place-items: center; font-weight: 800; }
+.task.done .tick { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.task.done .nm { text-decoration: line-through; color: var(--muted); }
+.task .nm { font-weight: 700; } .task .nt { font-size: .78em; color: var(--muted); display: block; font-weight: 500; }
+
+.badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.badge { background: var(--paper); border: 3px solid var(--sun); border-radius: 18px; padding: 14px 8px; text-align: center; }
+.badge .em { font-size: 2.8em; line-height: 1.1; } .badge .t { font-weight: 800; font-size: .92em; } .badge .s { font-size: .7em; color: var(--muted); }
+.badge.locked { border-style: dashed; border-color: var(--line); opacity: .85; } .badge.locked .em { filter: grayscale(1); opacity: .55; }
+html[data-big="1"] .badge-grid { grid-template-columns: 1fr; }
+.badge.new { animation: pop .6s ease; background: var(--sun-soft); }
+@keyframes pop { 0% { transform: scale(.7); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .badge.new { animation: none; } }
+
+details.q { background: var(--paper); border: 2px solid var(--line); border-radius: 14px; margin-bottom: 10px; }
+details.q summary { padding: 14px 16px; font-weight: 700; cursor: pointer; min-height: 60px; display: flex; align-items: center; }
+details.q .a { padding: 0 16px 14px; }
+
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: min(1em, 20px * 1.3); }
+.cal .dow { text-align: center; font-weight: 800; font-size: .7em; color: var(--muted); padding: 4px 0; }
+.cal button { position: relative; aspect-ratio: 1 / 1.05; min-height: 48px; border: 2px solid var(--line); border-radius: 12px; background: var(--paper); font-weight: 700; padding: 0; }
+.cal button.out { opacity: .35; } .cal button.today { border-color: var(--accent); border-width: 4px; }
+.cal button.sel { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.cal .dots { position: absolute; bottom: 2px; left: 0; right: 0; font-size: .55em; line-height: 1; }
+.monthbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; }
+.monthbar .btn { width: 64px; min-height: 56px; flex: none; padding: 0; }
+.monthbar strong { font-size: 1.1em; text-align: center; }
+
+.spin { text-align: center; padding: 60px 0; font-weight: 700; color: var(--muted); }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: grid; place-items: center; z-index: 20; }
+.overlay div { background: var(--paper); border: 3px solid var(--accent); border-radius: 18px; padding: 22px 30px; font-weight: 800; }
+.pill { display: inline-block; background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 999px; padding: 0 12px; font-size: .75em; font-weight: 700; margin-left: 6px; }
+.pill.warn { background: var(--sun-soft); border-color: var(--sun); }
+.big-thanks { text-align: center; padding: 10px 0 4px; } .big-thanks .em { font-size: 4em; }
+a { color: var(--accent); }
+.linkbtn { border: 0; background: none; color: var(--accent); text-decoration: underline; text-underline-offset: 4px; font-weight: 700; padding: 10px 4px; min-height: 48px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="spin">Just a moment…</div></div>
+<script>
+'use strict';
+// ====== where the server lives (the build step fills this in; local testing can use ?api=http://localhost:8787) ======
+var GARDEN_API = 'https://script.google.com/macros/s/AKfycbyCz4t4sK2unL4Ky1fyw8eWcf1ZyO0UXDQDPnmOu2DHcMaZPO8cjE_aYms-cvOKKouY/exec';
+(function () { try { var q = new URLSearchParams(location.search).get('api'); if (q && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) GARDEN_API = q; } catch (e) {} })();
+
+// ====== little helpers ======
+function h(tag, attrs) {
+  var el = document.createElement(tag), kids = Array.prototype.slice.call(arguments, 2);
+  Object.keys(attrs || {}).forEach(function (k) {
+    var v = attrs[k]; if (v == null || v === false) return;
+    if (k === 'class') el.className = v;
+    else if (k === 'value') el.value = v;
+    else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  });
+  (function add(list) { list.forEach(function (c) { if (c == null || c === false) return; if (Array.isArray(c)) return add(c); el.append(c.nodeType ? c : document.createTextNode(String(c))); }); })(kids);
+  return el;
+}
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} return null; }
+var prefs = (function () { try { return JSON.parse(store('garden.prefs') || '{}'); } catch (e) { return {}; } })();
+function savePrefs() { store('garden.prefs', JSON.stringify(prefs)); }
+var SIZES = [1, 1.2, 1.45, 1.75];
+function applyPrefs() {
+  var r = document.documentElement, i = Math.max(0, Math.min(3, prefs.size || 0));
+  r.style.setProperty('--s', SIZES[i]); r.setAttribute('data-big', i >= 2 ? '1' : '0');
+  r.setAttribute('data-labels', prefs.labels === 'icons' ? 'icons' : 'words');
+  if (prefs.theme) r.setAttribute('data-theme', prefs.theme); else r.removeAttribute('data-theme');
+}
+applyPrefs();
+var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function parse(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
+function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return ymd(d); }
+function dayShort(s) { var d = parse(s); return DAYS[d.getDay()].slice(0, 3) + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3); }
+function dayLong(s) { var d = parse(s); return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+function hrs(n) { n = Math.round(n * 100) / 100; return n + (n === 1 ? ' hour' : ' hours'); }
+function localToday() { return ymd(new Date()); }
+
+// ====== talking to the server ======
+var token = store('garden.token') || '', S = null, flash = null, busyCount = 0;
+function api(fn, args) {
+  busy(1);
+  return fetch(GARDEN_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args || [] }) })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { busy(-1); if (!j.ok) { var e = new Error(j.error); e.server = true; throw e; } return j.result; })
+    .catch(function (e) { busy(-1); if (!e.server) e = new Error('Cannot reach the garden just now. Please check your internet and try again.'); throw e; });
+}
+function busy(d) {
+  busyCount = Math.max(0, busyCount + d);
+  var o = document.getElementById('ov');
+  if (busyCount && !o) document.body.append(h('div', { class: 'overlay', id: 'ov', role: 'status' }, h('div', null, 'Just a moment…')));
+  if (!busyCount && o) o.remove();
+}
+function setState(st) { S = st; }
+function fail(e) {
+  if (/sign in/i.test(e.message) && S) { signedOut(); return; }
+  flash = { kind: 'error', text: e.message }; render();
+}
+function signedOut() { token = ''; store('garden.token', null); S = null; go('login'); }
+function act(promise, then) { return promise.then(function (r) { if (then) then(r); }).catch(fail); }
+
+// ====== screens and navigation ======
+var screen = 'login', mgr = 'menu';
+function go(s) { flash = null; if (location.hash !== '#' + s) location.hash = s; else render(); }
+window.addEventListener('hashchange', function () { var s = location.hash.slice(1) || (token ? 'home' : 'login'); screen = s; if (s !== 'new') { /* leaving wizard keeps draft */ } flash = null; render(); window.scrollTo(0, 0); });
+
+function toolbar() {
+  var speaking = !!(window.speechSynthesis && speechSynthesis.speaking);
+  function tb(ic, wd, label, fn, pressed) { return h('button', { type: 'button', 'aria-label': label, title: label, 'aria-pressed': pressed ? 'true' : null, onclick: fn }, h('span', { class: 'ic', 'aria-hidden': 'true' }, ic), h('span', { class: 'wd' }, wd)); }
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark' || (!prefs.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+  return h('div', { class: 'tools', role: 'toolbar', 'aria-label': 'Make this easier to see and hear' },
+    tb('A−', 'Smaller', 'Smaller text', function () { prefs.size = Math.max(0, (prefs.size || 0) - 1); savePrefs(); applyPrefs(); }),
+    tb('A+', 'Bigger', 'Bigger text', function () { prefs.size = Math.min(3, (prefs.size || 0) + 1); savePrefs(); applyPrefs(); }),
+    tb(dark ? '☀️' : '🌙', dark ? 'Day' : 'Night', dark ? 'Switch to day colours' : 'Switch to night colours', function () { prefs.theme = dark ? 'light' : 'dark'; savePrefs(); applyPrefs(); render(); }),
+    tb(prefs.labels === 'icons' ? '🔤' : '🖼️', prefs.labels === 'icons' ? 'Words' : 'Icons', prefs.labels === 'icons' ? 'Show words on the buttons' : 'Show pictures only on the buttons', function () { prefs.labels = prefs.labels === 'icons' ? 'words' : 'icons'; savePrefs(); applyPrefs(); render(); }),
+    tb(speaking ? '⏹️' : '🔊', speaking ? 'Stop' : 'Read to me', speaking ? 'Stop reading' : 'Read this page aloud', readAloud, speaking));
+}
+function readAloud() {
+  if (!window.speechSynthesis) { flash = { kind: 'error', text: 'Sorry, this phone cannot read aloud.' }; render(); return; }
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); render(); return; }
+  var main = document.getElementById('main'); if (!main) return;
+  var u = new SpeechSynthesisUtterance(main.innerText.replace(/\n+/g, '. '));
+  u.rate = 0.9; u.lang = 'en-NZ'; u.onend = u.onerror = function () { render(); };
+  speechSynthesis.speak(u); render();
+}
+function render() {
+  var app = document.getElementById('app'), y = window.scrollY;
+  if (window.speechSynthesis && speechSynthesis.speaking && !render.keepSpeech) speechSynthesis.cancel();
+  app.textContent = '';
+  app.append(toolbar());
+  var main = h('main', { id: 'main', tabindex: '-1' });
+  app.append(main);
+  if (flash) main.append(h('div', { class: flash.kind === 'error' ? 'error' : 'good', role: 'alert' }, h('span', null, flash.text), h('button', { type: 'button', onclick: function () { flash = null; render(); } }, 'OK')));
+  var map = { login: vLogin, join: vJoin, newpw: vNewPw, home: vHome, list: vList, done: vDone, new: vWizard, coming: vComing, questions: vQuestions, badges: vBadges, manager: vManager };
+  var needAuth = screen !== 'login' && screen !== 'join';
+  if (needAuth && !token) { screen = 'login'; }
+  else if (needAuth && !S) { main.append(h('div', { class: 'spin' }, 'Loading the garden…')); api('load', [token]).then(function (st) { setState(st); render(); }).catch(function (e) { if (/sign in/i.test(e.message)) signedOut(); else { flash = { kind: 'error', text: e.message }; main.textContent = ''; render.retry(); } }); return; }
+  (map[screen] || vHome)(main);
+  window.scrollTo(0, y);
+}
+render.retry = function () { var m = document.getElementById('main'); m.append(h('button', { class: 'btn', onclick: function () { S = null; render(); } }, 'Try again')); };
+function head(main, title, back) {
+  if (back !== false && screen !== 'home') main.append(h('button', { class: 'back', type: 'button', onclick: function () { go(back || 'home'); } }, '← Back'));
+  if (S) main.append(h('div', { class: 'eyebrow' }, '🌻 ' + S.garden));
+  main.append(h('h1', null, title));
+}
+
+// ====== sign in / join ======
+function pwField(id, label, auto) {
+  var inp = h('input', { type: 'password', id: id, autocomplete: auto, autocapitalize: 'none', spellcheck: 'false' });
+  var show = h('button', { type: 'button', class: 'linkbtn', onclick: function () { var on = inp.type === 'password'; inp.type = on ? 'text' : 'password'; show.textContent = on ? 'Hide my password' : 'Show my password'; } }, 'Show my password');
+  var frag = document.createDocumentFragment(); frag.append(h('label', { class: 'f', for: id }, label), inp, show); return frag;
+}
+function vLogin(main) {
+  main.append(h('div', { class: 'eyebrow' }, '🌻 Community garden'), h('h1', null, 'Welcome to the garden'));
+  main.append(h('p', null, 'Type your full name and your password.'));
+  var nm = h('input', { type: 'text', id: 'nm', autocomplete: 'username', value: store('garden.lastName') || '', autocapitalize: 'words', spellcheck: 'false' });
+  main.append(h('label', { class: 'f', for: 'nm' }, 'Your full name'), nm, pwField('pw', 'Your password', 'current-password'));
+  var go1 = function () {
+    var n = nm.value, p = document.getElementById('pw').value;
+    if (!n.trim() || !p) { flash = { kind: 'error', text: 'Please type your name and your password.' }; render(); return; }
+    store('garden.lastName', n.trim());
+    api('signIn', [n, p]).then(function (r) { token = r.token; store('garden.token', token); setState(r.state); if (r.mustChange) go('newpw'); else go('home'); }).catch(function (e) { flash = { kind: 'error', text: e.message }; render(); document.getElementById('nm').value = n; });
+  };
+  main.append(h('div', { class: 'stack', style: 'margin-top:18px' }, h('button', { class: 'btn', type: 'button', onclick: go1 }, '🔑 Sign in'), h('button', { class: 'btn alt', type: 'button', onclick: function () { go('join'); } }, '🌱 I am new here')));
+  main.append(h('p', { class: 'muted small', style: 'margin-top:18px' }, 'Forgotten your password? Ask the Garden Manager. They can give you a new one.'));
+  [nm, document.getElementById('pw')].forEach(function (i) { i && i.addEventListener('keydown', function (e) { if (e.key === 'Enter') go1(); }); });
+}
+function vJoin(main) {
+  main.append(h('button', { class: 'back', type: 'button', onclick: function () { go('login'); } }, '← Back'), h('h1', null, 'Join the garden'));
+  main.append(h('label', { class: 'f', for: 'jn' }, 'Your full name'), h('input', { type: 'text', id: 'jn', autocomplete: 'username', autocapitalize: 'words' }));
+  main.append(h('p', { class: 'muted small' }, 'First and last name, like “Margaret Smith”. You will use this to sign in.'));
+  main.append(pwField('jp', 'Make a password', 'new-password'));
+  main.append(h('p', { class: 'muted small' }, 'At least 6 letters or numbers. Three words you will remember work well, like “bluecarrotfern”.'));
+  main.append(h('div', { class: 'card', style: 'margin-top:16px' }, h('h3', null, '🔒 Optional: how can we reach you?'), h('p', { class: 'small muted' }, 'Only the Garden Manager can see this. It is kept in a separate private place, apart from your garden records.'),
+    h('label', { class: 'f', for: 'je' }, 'Email (if you have one)'), h('input', { type: 'email', id: 'je', autocomplete: 'email' }),
+    h('label', { class: 'f', for: 'jt' }, 'Phone (if you like)'), h('input', { type: 'tel', id: 'jt', autocomplete: 'tel' })));
+  main.append(h('div', { class: 'stack', style: 'margin-top:14px' }, h('button', { class: 'btn', type: 'button', onclick: function () {
+    var n = document.getElementById('jn').value, p = document.getElementById('jp').value;
+    api('signUp', [n, p, document.getElementById('je').value, document.getElementById('jt').value]).then(function (r) { store('garden.lastName', n.trim()); token = r.token; store('garden.token', token); setState(r.state); flash = { kind: 'good', text: 'Welcome, ' + r.state.me.first + '! You are in.' }; go('home'); }).catch(function (e) { flash = { kind: 'error', text: e.message }; render(); });
+  } }, '✔ Join the garden')));
+}
+function vNewPw(main) {
+  main.append(h('h1', null, 'Choose a new password'), h('p', null, 'The Garden Manager gave you a short-term password. Please make one of your own.'));
+  main.append(pwField('np', 'Your new password', 'new-password'));
+  main.append(h('div', { class: 'stack', style: 'margin-top:14px' }, h('button', { class: 'btn', onclick: function () { act(api('changePassword', [token, document.getElementById('np').value]), function () { flash = { kind: 'good', text: 'Your new password is saved.' }; go('home'); }); } }, '✔ Save my password')));
+}
+
+// ====== home ======
+function vHome(main) {
+  main.append(h('div', { class: 'eyebrow' }, '🌻 ' + S.garden), h('h1', null, 'Hello, ' + S.me.first));
+  var mine = S.plans.filter(function (p) { return p.mine; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0];
+  if (mine && mine.date <= addDays(S.today, 14)) main.append(h('div', { class: 'banner' }, '📌 You will be at the garden on ' + dayLong(mine.date) + '.'));
+  var open = S.list.filter(function (x) { return !x.done; }).length;
+  var nextEv = S.events.filter(function (e) { return e.kind === 'Working bee' && e.date >= S.today; })[0];
+  function tile(cls, em, name, sub, to) { return h('button', { class: 'tile ' + cls, type: 'button', onclick: function () { go(to); } }, h('span', { class: 'big', 'aria-hidden': 'true' }, em), h('span', { class: 'txt' }, h('span', { class: 'name' }, name), h('span', { class: 'sub' }, sub))); }
+  main.append(h('div', { class: 'tiles' },
+    tile('t1', '🌿', 'Garden List', open ? open + (open === 1 ? ' job to do' : ' jobs to do') : 'All jobs done!', 'list'),
+    tile('t2', '✍️', "What I've Done", S.badges.total ? hrs(S.badges.total) + ' so far' : 'Record your work', 'done'),
+    tile('t3', '📅', 'Coming Up', nextEv ? 'Working bee ' + dayShort(nextEv.date) : 'News and dates', 'coming'),
+    tile('t4', '❓', 'Questions', S.asked.length ? S.asked.length + ' waiting for an answer' : 'Ask or read answers', 'questions')));
+  main.append(h('button', { class: 'btn alt', type: 'button', onclick: function () { go('badges'); } }, '🏅 My badges (' + S.badges.earned.length + ')'));
+  if (S.me.role === 'Manager') main.append(h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn alt', type: 'button', onclick: function () { mgr = 'menu'; go('manager'); } }, '🧰 Garden Manager')));
+  main.append(h('div', { style: 'margin-top:26px;text-align:center' }, h('span', { class: 'muted small' }, 'Signed in as ' + S.me.name + '. '), h('button', { class: 'linkbtn', type: 'button', onclick: function () { api('signOut', [token]).catch(function () {}); signedOut(); } }, 'Not you? Sign out')));
+}
+
+// ====== garden list ======
+function vList(main) {
+  head(main, 'Garden List');
+  var open = S.list.filter(function (x) { return !x.done; }), done = S.list.filter(function (x) { return x.done; });
+  main.append(h('p', { class: 'muted' }, open.length ? 'Tap a job when you have done some of it.' : 'Nothing on the list right now.'));
+  open.forEach(function (t) { main.append(taskBtn(t, function () { startWizard(t); })); });
+  if (done.length) { main.append(h('h2', null, 'Finished')); done.forEach(function (t) { main.append(taskBtn(t)); }); }
+}
+function taskBtn(t, fn) {
+  return h(fn ? 'button' : 'div', { class: 'task' + (t.done ? ' done' : ''), type: fn ? 'button' : null, onclick: fn }, h('span', { class: 'tick', 'aria-hidden': 'true' }, t.done ? '✔' : ''), h('span', null, h('span', { class: 'nm' }, t.task), t.note ? h('span', { class: 'nt' }, t.note) : null, t.done && t.doneOn ? h('span', { class: 'nt' }, 'Finished ' + dayShort(t.doneOn)) : null), h('span', { class: 'pill', style: 'margin-left:auto' }, t.area));
+}
+
+// ====== what I've done ======
+function vDone(main) {
+  head(main, "What I've Done");
+  main.append(h('button', { class: 'btn', type: 'button', onclick: function () { startWizard(); } }, '＋ Record my work'));
+  if (!S.work.length) { main.append(h('p', { class: 'muted', style: 'margin-top:18px' }, 'Nothing yet. After your next visit, tap the green button.')); return; }
+  main.append(h('h2', null, 'My recent visits'));
+  S.work.forEach(function (w) {
+    main.append(h('div', { class: 'card' }, h('h3', null, dayLong(w.date), h('span', { class: 'pill' }, hrs(w.hours))),
+      h('p', { style: 'margin:4px 0' }, w.items.map(function (i) { return i.t + (i.h ? ' (' + hrs(i.h) + ')' : ''); }).join(', ')),
+      w.issue ? h('p', { class: 'small muted' }, '⚠️ Reported: ' + w.issue) : null,
+      w.good ? h('p', { class: 'small muted' }, '🌟 ' + w.good) : null,
+      h('button', { class: 'linkbtn', type: 'button', onclick: function () { if (confirm('Remove this visit from your record?')) act(api('deleteWork', [token, w.id]), function (st) { setState(st); flash = { kind: 'good', text: 'Removed.' }; render(); }); } }, 'Remove this visit')));
+  });
+}
+
+// ====== the "record my work" steps ======
+var wiz = null;
+function startWizard(listTask) {
+  wiz = { step: 0, date: S.today, changeDay: false, picks: [], other: '', hours: 2, perItem: false, fin: {}, issueYN: null, issue: '', goodYN: null, good: '', friendYN: null, friends: '', nextKind: null, next: '', open: false, remind: true, done: null };
+  if (listTask) wiz.picks.push({ key: 'l' + listTask.id, t: listTask.task, c: listTask.area, l: listTask.id });
+  go('new');
+}
+function steps() { var s = ['what', 'hours']; if (wiz.picks.some(function (p) { return p.l; })) s.push('finished'); return s.concat(['issue', 'good', 'friends', 'next']); }
+function pickBtn(on, em, label, sub, fn) { return h('button', { class: 'pick', type: 'button', 'aria-pressed': on ? 'true' : 'false', onclick: fn }, h('span', { class: 'box', 'aria-hidden': 'true' }, on ? '✔' : ''), em ? h('span', { class: 'em', 'aria-hidden': 'true' }, em) : null, h('span', null, label, sub ? h('small', null, sub) : null)); }
+function toggle(p) { var i = wiz.picks.findIndex(function (x) { return x.key === p.key; }); if (i >= 0) wiz.picks.splice(i, 1); else wiz.picks.push(p); render(); }
+function vWizard(main) {
+  if (!wiz) { go('done'); return; }
+  if (wiz.done) return vThanks(main);
+  var st = steps(), cur = st[wiz.step], n = st.length;
+  main.append(h('button', { class: 'back', type: 'button', onclick: function () { if (wiz.step > 0) { wiz.step--; render(); window.scrollTo(0, 0); } else { go('done'); } } }, '← Back'));
+  main.append(h('div', { class: 'eyebrow' }, 'Step ' + (wiz.step + 1) + ' of ' + n), h('div', { class: 'progress', 'aria-hidden': 'true' }, h('i', { style: 'width:' + Math.round((wiz.step + 1) / n * 100) + '%' })));
+  var next = function (ok, msg) { if (!ok) { flash = { kind: 'error', text: msg }; render(); return; } wiz.step++; render(); window.scrollTo(0, 0); };
+  var nextBtn = function (label, fn) { return h('div', { style: 'margin-top:18px' }, h('button', { class: 'btn', type: 'button', onclick: fn }, label || 'Next →')); };
+  if (cur === 'what') {
+    main.append(h('h1', null, 'What did you do?'));
+    main.append(h('p', null, wiz.date === S.today ? 'Today, ' + dayLong(wiz.date) + '. ' : dayLong(wiz.date) + '. ', h('button', { class: 'linkbtn', type: 'button', onclick: function () { wiz.changeDay = !wiz.changeDay; render(); } }, 'Not today?')));
+    if (wiz.changeDay) main.append(h('input', { type: 'date', value: wiz.date, max: S.today, 'aria-label': 'Which day', onchange: function (e) { if (e.target.value) { wiz.date = e.target.value; render(); } } }));
+    var open = S.list.filter(function (x) { return !x.done; });
+    if (open.length) { main.append(h('h2', null, 'From the Garden List')); open.forEach(function (t) { var key = 'l' + t.id; main.append(pickBtn(wiz.picks.some(function (p) { return p.key === key; }), '🌿', t.task, t.note, function () { toggle({ key: key, t: t.task, c: t.area, l: t.id }); })); }); }
+    main.append(h('h2', null, 'Common jobs'));
+    S.common.forEach(function (c) { var key = 'c' + c.id; main.append(pickBtn(wiz.picks.some(function (p) { return p.key === key; }), c.emoji, c.task, '', function () { toggle({ key: key, t: c.task, c: c.area }); })); });
+    wiz.picks.filter(function (p) { return p.key.charAt(0) === 'o'; }).forEach(function (p) { main.append(pickBtn(true, '✏️', p.t, '', function () { toggle(p); })); });
+    main.append(h('h2', null, 'Something else?'));
+    var oi = h('input', { type: 'text', placeholder: 'Type it here', 'aria-label': 'Something else you did', value: wiz.other, oninput: function (e) { wiz.other = e.target.value; } });
+    main.append(oi, h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn alt', type: 'button', onclick: function () { var t = wiz.other.trim(); if (!t) return; wiz.picks.push({ key: 'o' + Date.now(), t: t, c: 'Other' }); wiz.other = ''; render(); } }, '＋ Add it')));
+    main.append(nextBtn('Next →', function () { var t = wiz.other.trim(); if (t) { wiz.picks.push({ key: 'o' + Date.now(), t: t, c: 'Other' }); wiz.other = ''; } next(wiz.picks.length > 0, 'Please tap at least one job.'); }));
+  }
+  if (cur === 'hours') {
+    main.append(h('h1', null, wiz.perItem ? 'Hours for each job' : 'How long were you in the garden?'));
+    var stepper = function (get, set, label) { return h('div', { class: 'stepper' }, h('button', { type: 'button', 'aria-label': 'Less time', onclick: function () { set(Math.max(0.5, get() - 0.5)); render.keepScroll = 1; render(); } }, '−'), h('div', { class: 'val', role: 'status', 'aria-live': 'polite' }, String(get()), h('small', null, get() === 1 ? 'hour' : 'hours')), h('button', { type: 'button', 'aria-label': 'More time', onclick: function () { set(Math.min(12, get() + 0.5)); render(); } }, '＋')); };
+    if (!wiz.perItem) main.append(stepper(function () { return wiz.hours; }, function (v) { wiz.hours = v; }), h('button', { class: 'btn alt', type: 'button', onclick: function () { wiz.perItem = true; wiz.picks.forEach(function (p) { p.h = p.h || 1; }); render(); } }, 'I want to give hours for each job'));
+    else { wiz.picks.forEach(function (p) { main.append(h('div', { class: 'card' }, h('h3', null, p.t), stepper(function () { return p.h || 1; }, function (v) { p.h = v; }))); }); main.append(h('button', { class: 'btn alt', type: 'button', onclick: function () { wiz.perItem = false; render(); } }, 'Just give one total for today')); }
+    main.append(nextBtn());
+    main.lastChild.firstChild.onclick = function () { next(true); };
+  }
+  if (cur === 'finished') {
+    main.append(h('h1', null, 'Is the job finished?'), h('p', { class: 'muted' }, 'This ticks it off the Garden List for everyone.'));
+    wiz.picks.filter(function (p) { return p.l; }).forEach(function (p) {
+      main.append(h('div', { class: 'card' }, h('h3', null, p.t), h('div', { class: 'yn' }, pickBtn(wiz.fin[p.l] === 'y', '', 'Yes, all done', '', function () { wiz.fin[p.l] = 'y'; render(); }), pickBtn(wiz.fin[p.l] === 'n', '', 'Not yet', '', function () { wiz.fin[p.l] = 'n'; render(); }))));
+    });
+    main.append(nextBtn()); main.lastChild.firstChild.onclick = function () { next(true); };
+  }
+  if (cur === 'issue') {
+    main.append(h('h1', null, 'Anything to report?'), h('p', { class: 'muted' }, 'A broken tool, a pest, something that needs fixing.'));
+    main.append(h('div', { class: 'yn' }, pickBtn(wiz.issueYN === 'n', '', 'No, all fine', '', function () { wiz.issueYN = 'n'; render(); }), pickBtn(wiz.issueYN === 'y', '', 'Yes, I do', '', function () { wiz.issueYN = 'y'; render(); })));
+    if (wiz.issueYN === 'y') main.append(h('label', { class: 'f', for: 'iss' }, 'Tell us what you noticed'), h('textarea', { id: 'iss', oninput: function (e) { wiz.issue = e.target.value; } }, wiz.issue));
+    main.append(nextBtn()); main.lastChild.firstChild.onclick = function () { next(wiz.issueYN !== null, 'Please tap Yes or No.'); };
+  }
+  if (cur === 'good') {
+    main.append(h('h1', null, 'Any good news?'), h('p', { class: 'muted' }, 'Something nice you saw, or kind words from someone.'));
+    main.append(h('div', { class: 'yn' }, pickBtn(wiz.goodYN === 'n', '', 'Not today', '', function () { wiz.goodYN = 'n'; render(); }), pickBtn(wiz.goodYN === 'y', '', 'Yes, I do', '', function () { wiz.goodYN = 'y'; render(); })));
+    if (wiz.goodYN === 'y') main.append(h('label', { class: 'f', for: 'gd' }, 'Tell us the good news'), h('textarea', { id: 'gd', oninput: function (e) { wiz.good = e.target.value; } }, wiz.good));
+    main.append(nextBtn()); main.lastChild.firstChild.onclick = function () { next(wiz.goodYN !== null, 'Please tap Yes or No.'); };
+  }
+  if (cur === 'friends') {
+    main.append(h('h1', null, 'Did you bring someone new?'), h('p', { class: 'muted' }, 'A friend or a new volunteer. You earn a badge for each one.'));
+    main.append(h('div', { class: 'yn' }, pickBtn(wiz.friendYN === 'n', '', 'No, just me', '', function () { wiz.friendYN = 'n'; render(); }), pickBtn(wiz.friendYN === 'y', '', 'Yes, I did', '', function () { wiz.friendYN = 'y'; render(); })));
+    if (wiz.friendYN === 'y') main.append(h('label', { class: 'f', for: 'fr' }, 'Their first name (more than one? separate with commas)'), h('input', { type: 'text', id: 'fr', value: wiz.friends, oninput: function (e) { wiz.friends = e.target.value; } }));
+    main.append(nextBtn()); main.lastChild.firstChild.onclick = function () { next(wiz.friendYN !== null && (wiz.friendYN === 'n' || wiz.friends.trim()), wiz.friendYN === null ? 'Please tap Yes or No.' : 'Please type their first name.'); };
+  }
+  if (cur === 'next') {
+    main.append(h('h1', null, 'When will we see you again?'));
+    var base = wiz.date < S.today ? S.today : wiz.date, wk = addDays(base, 7), tw = addDays(base, 14);
+    main.append(pickBtn(wiz.nextKind === 'wk', '📅', 'Same day next week', dayLong(wk), function () { wiz.nextKind = 'wk'; wiz.next = wk; render(); }));
+    main.append(pickBtn(wiz.nextKind === 'tw', '📅', 'In two weeks', dayLong(tw), function () { wiz.nextKind = 'tw'; wiz.next = tw; render(); }));
+    main.append(pickBtn(wiz.nextKind === 'pick', '🗓️', 'I will pick a day', wiz.nextKind === 'pick' && wiz.next ? dayLong(wiz.next) : '', function () { wiz.nextKind = 'pick'; wiz.next = wiz.next || ''; render(); }));
+    if (wiz.nextKind === 'pick') main.append(h('input', { type: 'date', min: S.today, value: wiz.next, 'aria-label': 'The day you will come', onchange: function (e) { wiz.next = e.target.value; render(); } }), h('div', { style: 'height:10px' }));
+    main.append(pickBtn(wiz.nextKind === 'none', '🤷', 'Not sure yet', '', function () { wiz.nextKind = 'none'; wiz.next = ''; render(); }));
+    if (wiz.next && wiz.nextKind !== 'none') {
+      main.append(h('h2', null, 'And…'), pickBtn(wiz.open, '👋', 'Others are welcome to join me', 'Shows your name on the calendar', function () { wiz.open = !wiz.open; render(); }), pickBtn(wiz.remind, '⏰', 'Remind me', 'I will give you a reminder for your phone', function () { wiz.remind = !wiz.remind; render(); }));
+    }
+    main.append(nextBtn('✔ Save my work', function () {
+      if (!wiz.nextKind) { flash = { kind: 'error', text: 'Please choose one of the options.' }; render(); return; }
+      if (wiz.nextKind === 'pick' && !wiz.next) { flash = { kind: 'error', text: 'Please pick a day, or choose “Not sure yet”.' }; render(); return; }
+      var e = { date: wiz.date, hours: wiz.hours, perItem: wiz.perItem, items: wiz.picks.map(function (p) { return { t: p.t, c: p.c, h: wiz.perItem ? p.h : null, l: p.l || '' }; }), issue: wiz.issueYN === 'y' ? wiz.issue.trim() : '', good: wiz.goodYN === 'y' ? wiz.good.trim() : '', friends: wiz.friendYN === 'y' ? wiz.friends.trim() : '',
+        finished: Object.keys(wiz.fin).filter(function (k) { return wiz.fin[k] === 'y'; }), next: wiz.next ? { date: wiz.next, open: wiz.open } : null };
+      api('logWork', [token, e]).then(function (r) { setState(r.state); wiz.done = r; render(); window.scrollTo(0, 0); }).catch(fail);
+    }));
+  }
+}
+function vThanks(main) {
+  var r = wiz.done, hrsDone = wiz.perItem ? wiz.picks.reduce(function (a, p) { return a + (p.h || 0); }, 0) : wiz.hours;
+  main.append(h('div', { class: 'big-thanks' }, h('div', { class: 'em', 'aria-hidden': 'true' }, '🌻'), h('h1', null, 'Thank you, ' + S.me.first + '!'), h('p', null, 'You gave ' + hrs(hrsDone) + ' to the garden.')));
+  if (r.newBadges.length) { main.append(h('h2', null, '🎉 You earned ' + (r.newBadges.length === 1 ? 'a badge!' : r.newBadges.length + ' badges!')), h('div', { class: 'badge-grid' }, r.newBadges.map(function (b) { return badgeTile(b, 'new'); }))); }
+  if (wiz.next && wiz.nextKind !== 'none') {
+    main.append(h('div', { class: 'banner' }, '📌 We will see you on ' + dayLong(wiz.next) + '.'));
+    if (wiz.remind) main.append(h('button', { class: 'btn alt', type: 'button', onclick: function () { downloadIcs(wiz.next); } }, '⏰ Put a reminder on my phone'));
+  }
+  main.append(h('div', { style: 'margin-top:14px' }, h('button', { class: 'btn', type: 'button', onclick: function () { wiz = null; go('home'); } }, '🏠 Back to Home')));
+}
+function downloadIcs(date) {
+  var d = date.replace(/-/g, ''), e = addDays(date, 1).replace(/-/g, '');
+  var txt = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Garden Helpers//EN', 'BEGIN:VEVENT', 'UID:garden-' + d + '-' + Date.now() + '@gardenhelpers', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]|\.\d+/g, ''), 'DTSTART;VALUE=DATE:' + d, 'DTEND;VALUE=DATE:' + e, 'SUMMARY:Community garden: see you there!', 'BEGIN:VALARM', 'TRIGGER:-PT15H', 'ACTION:DISPLAY', 'DESCRIPTION:Garden day tomorrow', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  var a = h('a', { href: URL.createObjectURL(new Blob([txt], { type: 'text/calendar' })), download: 'garden-visit.ics' }); document.body.append(a); a.click(); a.remove();
+}
+
+// ====== badges ======
+function badgeTile(b, cls) { return h('div', { class: 'badge ' + (cls || '') }, h('div', { class: 'em', 'aria-hidden': 'true' }, b.emoji), h('div', { class: 't' }, b.title), h('div', { class: 's' }, b.sub)); }
+function vBadges(main) {
+  head(main, 'My badges');
+  main.append(h('p', null, 'You have given ', h('strong', null, hrs(S.badges.total)), ' to the garden. Thank you!'));
+  if (!S.badges.earned.length) main.append(h('p', { class: 'muted' }, 'Your first badge is only a few hours away.'));
+  else main.append(h('div', { class: 'badge-grid' }, S.badges.earned.map(function (b) { return badgeTile(b); })));
+  if (S.badges.next.length) { main.append(h('h2', null, 'Next to earn')); main.append(h('div', { class: 'badge-grid' }, S.badges.next.map(function (b) { return badgeTile(b, 'locked'); }))); }
+  main.append(h('p', { class: 'muted small', style: 'margin-top:16px' }, 'Badges also come for every working bee you help at, and for every friend you bring along.'));
+}
+
+// ====== coming up ======
+var cal = null, selDay = null, planOpen = false, planTime = '';
+function vComing(main) {
+  head(main, 'Coming Up');
+  var bees = S.events.filter(function (e) { return e.kind === 'Working bee' && e.date >= S.today; }), news = S.events.filter(function (e) { return e.kind !== 'Working bee'; }).slice().reverse().slice(0, 6);
+  if (bees.length) {
+    main.append(h('h2', null, '🐝 Working bees'));
+    bees.forEach(function (e) {
+      var going = S.plans.some(function (p) { return p.mine && p.date === e.date; }), n = S.plans.filter(function (p) { return p.date === e.date; }).length;
+      main.append(h('div', { class: 'card' }, h('h3', null, e.title), h('p', { style: 'margin:2px 0' }, dayLong(e.date) + (e.start ? ' at ' + e.start : '')), e.details ? h('p', { class: 'muted' }, e.details) : null, n ? h('p', { class: 'small muted' }, n + (n === 1 ? ' person' : ' people') + ' coming') : null,
+        going ? h('div', { class: 'good', style: 'margin:6px 0' }, '✔ You are coming') : h('button', { class: 'btn', type: 'button', onclick: function () { act(api('addPlan', [token, e.date, '', false, e.id, '']), function (st) { setState(st); flash = { kind: 'good', text: 'Lovely, we have put you down for ' + dayLong(e.date) + '.' }; render(); }); } }, "✔ I'll be there")));
+    });
+  }
+  if (news.length) { main.append(h('h2', null, '📰 News')); news.forEach(function (e) { main.append(h('div', { class: 'card' }, h('h3', null, e.title), h('p', { class: 'small muted', style: 'margin:0 0 4px' }, dayShort(e.date)), e.details ? h('p', { style: 'margin:0' }, e.details) : null)); }); }
+  if (!bees.length && !news.length) main.append(h('p', { class: 'muted' }, 'No news or working bees yet.'));
+  main.append(h('h2', null, '🗓️ Who is in the garden?'));
+  main.append(h('p', { class: 'muted' }, 'Tap a day to see who is coming, or to say you will be there.'));
+  if (!cal) { var t = parse(S.today); cal = { y: t.getFullYear(), m: t.getMonth() }; }
+  main.append(h('div', { class: 'monthbar' }, h('button', { class: 'btn alt', type: 'button', 'aria-label': 'Earlier month', onclick: function () { cal.m--; if (cal.m < 0) { cal.m = 11; cal.y--; } render(); } }, '◀'), h('strong', null, MONTHS[cal.m] + ' ' + cal.y), h('button', { class: 'btn alt', type: 'button', 'aria-label': 'Later month', onclick: function () { cal.m++; if (cal.m > 11) { cal.m = 0; cal.y++; } render(); } }, '▶')));
+  var grid = h('div', { class: 'cal', role: 'grid' });
+  ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d) { grid.append(h('div', { class: 'dow', 'aria-hidden': 'true' }, d)); });
+  var first = new Date(cal.y, cal.m, 1, 12), lead = (first.getDay() + 6) % 7, dim = new Date(cal.y, cal.m + 1, 0).getDate();
+  for (var i = 0; i < lead; i++) grid.append(h('div'));
+  for (var d = 1; d <= dim; d++) (function (d) {
+    var s = ymd(new Date(cal.y, cal.m, d, 12)), pl = S.plans.filter(function (p) { return p.date === s; }), ev = S.events.filter(function (e) { return e.date === s; });
+    var bee = ev.some(function (e) { return e.kind === 'Working bee'; }), mine = pl.some(function (p) { return p.mine; });
+    var lab = dayLong(s) + (bee ? ', working bee' : '') + (pl.length ? ', ' + pl.length + ' coming' : '') + (mine ? ', you are coming' : '');
+    grid.append(h('button', { type: 'button', class: (s === S.today ? 'today ' : '') + (s === selDay ? 'sel' : ''), 'aria-label': lab, onclick: function () { selDay = s; planOpen = false; render(); } }, String(d), h('span', { class: 'dots', 'aria-hidden': 'true' }, (bee ? '🐝' : '') + (mine ? '✔' : pl.length ? '👥' : ''))));
+  })(d);
+  main.append(grid);
+  if (selDay) dayPanel(main, selDay);
+}
+function dayPanel(main, s) {
+  var pl = S.plans.filter(function (p) { return p.date === s; }), ev = S.events.filter(function (e) { return e.date === s; }), mine = pl.filter(function (p) { return p.mine; })[0];
+  var box = h('div', { class: 'card', style: 'margin-top:14px' }, h('h3', null, dayLong(s)));
+  ev.forEach(function (e) { box.append(h('p', { style: 'margin:4px 0' }, (e.kind === 'Working bee' ? '🐝 ' : '📰 ') + e.title + (e.start ? ' at ' + e.start : ''))); });
+  var named = pl.filter(function (p) { return p.name && !p.mine; }), hidden = pl.filter(function (p) { return !p.name && !p.mine; }).length;
+  if (!pl.length && !ev.length) box.append(h('p', { class: 'muted' }, 'Nobody has said yet.'));
+  named.forEach(function (p) { box.append(h('p', { style: 'margin:4px 0' }, '👤 ' + p.name + (p.time ? ' (' + p.time.toLowerCase() + ')' : '') + (p.open ? ' – everyone is welcome to join' : ''))); });
+  if (hidden) box.append(h('p', { style: 'margin:4px 0' }, '👥 ' + hidden + (hidden === 1 ? ' other person' : ' other people')));
+  if (mine) {
+    box.append(h('div', { class: 'good' }, '✔ You are coming' + (mine.time ? ' (' + mine.time.toLowerCase() + ')' : '') + (mine.open ? ', and others are welcome to join you' : '')));
+    box.append(h('div', { class: 'row' }, h('button', { class: 'btn alt small', type: 'button', onclick: function () { downloadIcs(s); } }, '⏰ Reminder on my phone'), h('button', { class: 'btn warn small', type: 'button', onclick: function () { act(api('cancelPlan', [token, mine.id]), function (st) { setState(st); flash = { kind: 'good', text: 'No problem, we have taken you off.' }; render(); }); } }, "I can't make it")));
+  } else if (s >= S.today) {
+    if (!planOpen) box.append(h('button', { class: 'btn', type: 'button', onclick: function () { planOpen = true; planTime = ''; render(); } }, "✔ I'll be there"));
+    else {
+      box.append(h('p', { style: 'margin:10px 0 4px;font-weight:700' }, 'Roughly when?'));
+      ['Morning', 'Afternoon', 'Any time'].forEach(function (t) { box.append(pickBtn(planTime === t, '', t, '', function () { planTime = t; render(); })); });
+      box.append(pickBtn(planOpenFlag, '👋', 'Others are welcome to join me', '', function () { planOpenFlag = !planOpenFlag; render(); }));
+      box.append(h('button', { class: 'btn', type: 'button', onclick: function () { act(api('addPlan', [token, s, planTime === 'Any time' ? '' : planTime, planOpenFlag, '', '']), function (st) { setState(st); planOpen = false; planOpenFlag = false; flash = { kind: 'good', text: 'Lovely, we have put you down.' }; render(); }); } }, '✔ Put me down'));
+    }
+  }
+  main.append(box);
+}
+var planOpenFlag = false;
+
+// ====== questions ======
+var asking = false, askText = '';
+function vQuestions(main) {
+  head(main, 'Questions');
+  if (!asking) main.append(h('button', { class: 'btn', type: 'button', onclick: function () { asking = true; render(); } }, '❓ Ask a question'));
+  else {
+    main.append(h('div', { class: 'card' }, h('label', { class: 'f', for: 'aq', style: 'margin-top:0' }, 'What would you like to know?'), h('textarea', { id: 'aq', oninput: function (e) { askText = e.target.value; } }, askText),
+      h('div', { class: 'row', style: 'margin-top:10px' }, h('button', { class: 'btn', type: 'button', onclick: function () { act(api('askQuestion', [token, askText]), function (st) { setState(st); asking = false; askText = ''; flash = { kind: 'good', text: 'Thank you. The Garden Manager will answer soon.' }; render(); }); } }, '✔ Send it'), h('button', { class: 'btn alt', type: 'button', onclick: function () { asking = false; render(); } }, 'Cancel'))));
+  }
+  if (S.asked.length) { main.append(h('h2', null, 'Waiting for an answer')); S.asked.forEach(function (a) { main.append(h('div', { class: 'card' }, '⏳ ' + a.q)); }); }
+  var rec = S.faq.filter(function (f) { return f.kind === 'Recent'; }).slice().reverse(), com = S.faq.filter(function (f) { return f.kind !== 'Recent'; });
+  var q = function (f) { return h('details', { class: 'q' }, h('summary', null, f.q), h('div', { class: 'a' }, f.a)); };
+  if (rec.length) { main.append(h('h2', null, 'Recently asked')); rec.slice(0, 8).forEach(function (f) { main.append(q(f)); }); }
+  main.append(h('h2', null, 'Common questions'));
+  if (!com.length) main.append(h('p', { class: 'muted' }, 'Nothing here yet.')); com.forEach(function (f) { main.append(q(f)); });
+}
+
+// ====== Garden Manager ======
+var edit = null, tempShown = null, contactShown = {};
+function vManager(main) {
+  if (S.me.role !== 'Manager') { go('home'); return; }
+  var P = S.pm;
+  if (mgr !== 'menu') main.append(h('button', { class: 'back', type: 'button', onclick: function () { mgr = 'menu'; edit = null; render(); } }, '← Manager menu'));
+  else main.append(h('button', { class: 'back', type: 'button', onclick: function () { go('home'); } }, '← Back'));
+  main.append(h('div', { class: 'eyebrow' }, '🧰 Garden Manager'));
+  var unh = P.reports.filter(function (r) { return r.issue && !r.handled; }).length;
+  if (mgr === 'menu') {
+    main.append(h('h1', null, 'Manager'));
+    var b = function (em, label, to, n) { return h('button', { class: 'btn alt', type: 'button', onclick: function () { mgr = to; edit = null; render(); } }, em + ' ' + label, n ? h('span', { class: 'pill warn' }, String(n)) : null); };
+    main.append(h('div', { class: 'stack' }, b('⚠️', 'Reports and good news', 'reports', unh), b('🌿', 'Garden List', 'glist'), b('📅', 'Working bees and news', 'events'), b('❓', 'Questions', 'faq', P.asked.length), b('👥', 'Volunteers', 'people')));
+    return;
+  }
+  if (mgr === 'reports') {
+    main.append(h('h1', null, 'Reports and good news'));
+    if (!P.reports.length) main.append(h('p', { class: 'muted' }, 'Nothing yet.'));
+    P.reports.forEach(function (r) { main.append(h('div', { class: 'card' }, h('h3', null, r.who, h('span', { class: 'pill' }, dayShort(r.date))), r.issue ? h('p', null, '⚠️ ' + r.issue) : null, r.good ? h('p', null, '🌟 ' + r.good) : null, r.issue ? h('button', { class: 'btn small ' + (r.handled ? 'alt' : ''), type: 'button', onclick: function () { act(api('pmHandle', [token, r.id, !r.handled]), function (st) { setState(st); render(); }); } }, r.handled ? '✔ Sorted (tap to undo)' : 'Mark as sorted') : null)); });
+  }
+  if (mgr === 'glist') {
+    main.append(h('h1', null, 'Garden List'));
+    var areas = Array.from(new Set(S.common.map(function (c) { return c.area; }).concat(['Other'])));
+    main.append(formCard(edit && edit.tab === 'GardenList' ? edit.row : null, 'GardenList', [['Task', 'Job', 'text'], ['Area', 'What kind of job', 'select', areas], ['Note', 'Note (optional)', 'text']], 'Add a job'));
+    S.list.forEach(function (t) { if (edit && edit.tab === 'GardenList' && edit.row && edit.row.ID === t.id) return; main.append(h('div', { class: 'card' }, h('h3', null, t.task, t.done ? h('span', { class: 'pill' }, 'Done') : null), h('p', { class: 'muted small', style: 'margin:0 0 8px' }, t.area + (t.note ? ' · ' + t.note : '')),
+      h('div', { class: 'row' }, h('button', { class: 'btn alt small', type: 'button', onclick: function () { act(api('pmSave', [token, 'GardenList', { ID: t.id, Done: t.done ? '' : 'yes' }]), function (st) { setState(st); render(); }); } }, t.done ? 'Put back on list' : 'Tick as done'), h('button', { class: 'btn alt small', type: 'button', onclick: function () { edit = { tab: 'GardenList', row: { ID: t.id, Task: t.task, Area: t.area, Note: t.note } }; render(); } }, 'Edit'), h('button', { class: 'btn warn small', type: 'button', onclick: function () { if (confirm('Remove “' + t.task + '” from the list?')) act(api('pmDelete', [token, 'GardenList', t.id]), function (st) { setState(st); render(); }); } }, 'Remove')))); });
+  }
+  if (mgr === 'events') {
+    main.append(h('h1', null, 'Working bees and news'));
+    main.append(formCard(edit && edit.tab === 'Events' ? edit.row : null, 'Events', [['Kind', 'What is it', 'select', ['Working bee', 'News']], ['Title', 'Title', 'text'], ['Date', 'Date', 'date'], ['Start', 'Start time (working bee)', 'time'], ['Details', 'Details', 'textarea']], 'Add it'));
+    S.events.slice().reverse().forEach(function (e) { if (edit && edit.tab === 'Events' && edit.row && edit.row.ID === e.id) return; main.append(h('div', { class: 'card' }, h('h3', null, (e.kind === 'Working bee' ? '🐝 ' : '📰 ') + e.title, h('span', { class: 'pill' }, dayShort(e.date))), e.details ? h('p', { class: 'small muted' }, e.details) : null,
+      h('div', { class: 'row' }, h('button', { class: 'btn alt small', type: 'button', onclick: function () { edit = { tab: 'Events', row: { ID: e.id, Kind: e.kind, Title: e.title, Date: e.date, Start: e.start, Details: e.details } }; render(); } }, 'Edit'), h('button', { class: 'btn warn small', type: 'button', onclick: function () { if (confirm('Remove this?')) act(api('pmDelete', [token, 'Events', e.id]), function (st) { setState(st); render(); }); } }, 'Remove')))); });
+  }
+  if (mgr === 'faq') {
+    main.append(h('h1', null, 'Questions'));
+    if (P.asked.length) main.append(h('h2', null, 'Waiting for an answer'));
+    P.asked.forEach(function (a) { var ta = h('textarea', { 'aria-label': 'Your answer' }), keep = h('input', { type: 'checkbox', id: 'k' + a.id, style: 'width:28px;height:28px' }); main.append(h('div', { class: 'card' }, h('h3', null, a.q), h('p', { class: 'small muted' }, 'Asked by ' + a.who), ta, h('label', { for: 'k' + a.id, style: 'display:flex;gap:10px;align-items:center;margin:8px 0' }, keep, 'Keep it as a common question'), h('div', { class: 'row' }, h('button', { class: 'btn small', type: 'button', onclick: function () { act(api('pmAnswer', [token, a.id, ta.value, keep.checked]), function (st) { setState(st); render(); }); } }, 'Send answer'), h('button', { class: 'btn warn small', type: 'button', onclick: function () { act(api('pmDismissAsked', [token, a.id]), function (st) { setState(st); render(); }); } }, 'Dismiss')))); });
+    main.append(h('h2', null, 'Add or change an answer'));
+    main.append(formCard(edit && edit.tab === 'FAQ' ? edit.row : null, 'FAQ', [['Question', 'Question', 'text'], ['Answer', 'Answer', 'textarea'], ['Kind', 'Show it under', 'select', ['Common', 'Recent']]], 'Add it'));
+    S.faq.forEach(function (f) { if (edit && edit.tab === 'FAQ' && edit.row && edit.row.ID === f.id) return; main.append(h('div', { class: 'card' }, h('h3', null, f.q, h('span', { class: 'pill' }, f.kind)), h('p', { class: 'small' }, f.a), h('div', { class: 'row' }, h('button', { class: 'btn alt small', type: 'button', onclick: function () { edit = { tab: 'FAQ', row: { ID: f.id, Question: f.q, Answer: f.a, Kind: f.kind } }; render(); } }, 'Edit'), h('button', { class: 'btn warn small', type: 'button', onclick: function () { if (confirm('Remove this question?')) act(api('pmDelete', [token, 'FAQ', f.id]), function (st) { setState(st); render(); }); } }, 'Remove')))); });
+  }
+  if (mgr === 'people') {
+    main.append(h('h1', null, 'Volunteers'));
+    P.members.forEach(function (m) {
+      var self = m.id === S.me.id, c = contactShown[m.id];
+      main.append(h('div', { class: 'card' }, h('h3', null, m.name, m.role === 'Manager' ? h('span', { class: 'pill' }, 'Manager') : null, m.status === 'Paused' ? h('span', { class: 'pill warn' }, 'Paused') : null),
+        h('p', { class: 'small muted', style: 'margin:0 0 8px' }, hrs(m.hours) + ' given' + (m.last ? ' · last visit ' + dayShort(m.last) : ' · no visits yet') + ' · joined ' + dayShort(m.joined)),
+        c ? h('p', { class: 'small' }, '✉️ ' + (c.email || 'no email') + '  ☎️ ' + (c.phone || 'no phone')) : null,
+        tempShown && tempShown.id === m.id ? h('div', { class: 'banner' }, 'Tell ' + m.name.split(' ')[0] + ': your temporary password is ', h('span', { style: 'font-size:1.3em' }, tempShown.temp), '. They will choose their own when they sign in.') : null,
+        h('div', { class: 'row' }, h('button', { class: 'btn alt small', type: 'button', onclick: function () { act(api('pmContact', [token, m.id]), function (r) { contactShown[m.id] = r; render(); }); } }, 'Show contact'),
+          h('button', { class: 'btn alt small', type: 'button', onclick: function () { if (confirm('Make a new temporary password for ' + m.name + '? They will be signed out.')) act(api('pmResetPassword', [token, m.id]), function (r) { tempShown = { id: m.id, temp: r.temp }; render(); }); } }, 'Reset password'),
+          self ? null : h('button', { class: 'btn alt small', type: 'button', onclick: function () { act(api('pmSetStatus', [token, m.id, m.status === 'Paused' ? 'Active' : 'Paused']), function (st) { setState(st); render(); }); } }, m.status === 'Paused' ? 'Let back in' : 'Pause'),
+          self ? null : h('button', { class: 'btn alt small', type: 'button', onclick: function () { act(api('pmSetRole', [token, m.id, m.role === 'Manager' ? 'Volunteer' : 'Manager']), function (st) { setState(st); render(); }); } }, m.role === 'Manager' ? 'Make volunteer' : 'Make manager'))));
+    });
+    if (P.friends.length) { main.append(h('h2', null, 'Friends brought along')); P.friends.slice().reverse().forEach(function (f) { main.append(h('p', { class: 'small' }, '🤝 ' + f.friends + ' (with ' + f.who + ', ' + dayShort(f.date) + ')')); }); }
+  }
+}
+function formCard(row, tab, fields, addLabel) {
+  var vals = Object.assign({}, row || {}), els = {};
+  var card = h('div', { class: 'card', style: 'border-color:var(--accent)' }, h('h3', null, row ? 'Change it' : addLabel));
+  fields.forEach(function (f) {
+    var id = 'f_' + tab + '_' + f[0], el;
+    if (f[2] === 'select') el = h('select', { id: id }, f[3].map(function (o) { return h('option', { value: o, selected: (vals[f[0]] || f[3][0]) === o ? true : null }, o); }));
+    else if (f[2] === 'textarea') el = h('textarea', { id: id }, vals[f[0]] || '');
+    else el = h('input', { id: id, type: f[2], value: vals[f[0]] || '' });
+    els[f[0]] = el; card.append(h('label', { class: 'f', for: id }, f[1]), el);
+  });
+  card.append(h('div', { class: 'row', style: 'margin-top:12px' }, h('button', { class: 'btn small', type: 'button', onclick: function () {
+    var out = row ? { ID: row.ID } : {}; fields.forEach(function (f) { out[f[0]] = els[f[0]].value; });
+    act(api('pmSave', [token, tab, out]), function (st) { setState(st); edit = null; flash = { kind: 'good', text: 'Saved.' }; render(); });
+  } }, '✔ Save'), row ? h('button', { class: 'btn alt small', type: 'button', onclick: function () { edit = null; render(); } }, 'Cancel') : null));
+  return card;
+}
+
+// ====== start ======
+window.addEventListener('load', function () { screen = location.hash.slice(1) || (token ? 'home' : 'login'); if (!token && screen !== 'join') screen = 'login'; render(); });
+</script>
+</body>
+</html>
